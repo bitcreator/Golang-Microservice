@@ -5,9 +5,11 @@ PORT?=8000
 GOOS?=linux
 GOARCH?=amd64
 
-RELEASE?=0.0.1
+RELEASE?=0.0.2
 COMMIT?=$(shell git rev-parse --short HEAD)
 BUILD_TIME?=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
+
+CONTAINER_IMAGE?=docker.io/bitcreator/${APP}
 
 clean:
 	rm -rf ${APP}
@@ -20,13 +22,16 @@ build: clean
 		-o ${APP}
 
 container: build
-	docker build -t $(APP):$(RELEASE) .
+	docker build -t $(CONTAINER_IMAGE):$(RELEASE) .
+
+push: container
+	docker push $(CONTAINER_IMAGE):$(RELEASE)
 
 run: container
 	docker stop $(APP):$(RELEASE) || true && docker rm $(APP):$(RELEASE) || true
 	docker run --name ${APP} -p ${PORT}:${PORT} --rm \
 		-e "PORT=${PORT}" \
-		$(APP):$(RELEASE)
+		$(CONTAINER_IMAGE):$(RELEASE)
 
 test:
 	go test -v -race ./...
